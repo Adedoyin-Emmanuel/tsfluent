@@ -42,7 +42,7 @@ describe("Utils", () => {
           throw new Error("Persistent failure");
         };
 
-        const result = await tryAsync(operation);
+        const result = await tryAsync(operation, 1);
         expect(result.isFailure()).toBe(true);
         expect(result.getErrors()[0].message).toBe("Persistent failure");
         expect(attempts).toBe(1);
@@ -67,7 +67,7 @@ describe("Utils", () => {
           return "success";
         };
 
-        const result = await tryAsync(operation);
+        const result = await tryAsync(operation, 1, 0, 100);
         expect(result.isFailure()).toBe(true);
         expect(result.getErrors()[0].message).toBe("Operation timed out");
       });

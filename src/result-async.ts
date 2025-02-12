@@ -158,16 +158,23 @@ export class ResultAsync<T = void> {
   static async merge<T>(results: ResultAsync<T>[]): Promise<ResultAsync<T[]>> {
     const mergedResult = new ResultAsync<T[]>();
     const valuePromises: Promise<T>[] = [];
+    let hasErrors = false;
 
     for (const result of results) {
       if (result.isSuccess() && result._value !== undefined) {
         valuePromises.push(result._value);
       }
-      result._errors.forEach((error) => mergedResult.addError(error));
+      if (result.isFailure()) {
+        hasErrors = true;
+        result._errors.forEach((error) => mergedResult.addError(error));
+      }
       result._successes.forEach((success) => mergedResult.addSuccess(success));
     }
 
-    if (mergedResult.isSuccess()) {
+    if (hasErrors) {
+      mergedResult._status = "failure";
+      mergedResult._value = Promise.resolve([]);
+    } else {
       mergedResult._value = Promise.all(valuePromises);
     }
 
@@ -182,8 +189,15 @@ export class ResultAsync<T = void> {
    * @returns A new ResultAsync instance
    */
   static fromResult<T>(result: Result<T>): ResultAsync<T> {
-    const asyncResult = new ResultAsync<T>(result.getValue());
-    result.getErrors().forEach((error) => asyncResult.addError(error));
+    const asyncResult = new ResultAsync<T>(
+      result.isSuccess() ? result.getValue() : undefined
+    );
+
+    if (result.isFailure()) {
+      asyncResult._status = "failure";
+      result.getErrors().forEach((error) => asyncResult.addError(error));
+    }
+
     result.getSuccesses().forEach((success) => asyncResult.addSuccess(success));
     const metadata = result.getMetadata();
     if (metadata) {
@@ -193,15 +207,29 @@ export class ResultAsync<T = void> {
   }
 
   /**
-   * Creates a ResultAsync from a Promise that resolves to a Result.
+   * Creates a ResultAsync from a Promise that resolves to a Result or any value.
+   * If the promise rejects, it will be captured as a failure.
    *
    * @template T - The type of the value
-   * @param promise - Promise that resolves to a Result
+   * @param promise - Promise that resolves to a Result or value
    * @returns A Promise of a new ResultAsync instance
    */
-  static async from<T>(promise: Promise<Result<T>>): Promise<ResultAsync<T>> {
-    const result = await promise;
-    return ResultAsync.fromResult(result);
+  static async from<T>(
+    promise: Promise<Result<T> | T>
+  ): Promise<ResultAsync<T>> {
+    try {
+      const result = await promise;
+      if (result instanceof Result) {
+        return ResultAsync.fromResult(result);
+      }
+      return ResultAsync.okAsync(result);
+    } catch (error) {
+      return ResultAsync.failAsync({
+        message: error instanceof Error ? error.message : "Promise rejected",
+        causedBy: error instanceof Error ? error : undefined,
+        timestamp: new Date(),
+      });
+    }
   }
 
   /**

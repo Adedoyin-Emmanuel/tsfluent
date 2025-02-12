@@ -107,7 +107,7 @@ export class AsyncUtils {
    * @param action - The async operation to retry
    * @param retries - Number of retry attempts (default: 3)
    * @param delay - Delay in milliseconds between retries (default: 1000)
-   * @returns A Promise of a ResultAsync containing the operation result or error
+   * @returns A Promise of a Result containing the operation result or error
    *
    * @example
    * ```typescript
@@ -118,31 +118,134 @@ export class AsyncUtils {
    * );
    * ```
    */
-  static retry<T>(
+  static async retry<T>(
     action: () => Promise<T>,
     retries: number = 3,
     delay: number = 1000
-  ): Promise<ResultAsync<T>> {
-    const attempt = async (attemptsLeft: number): Promise<Result<T>> => {
+  ): Promise<Result<T>> {
+    let lastError: any;
+    let attempts = 0;
+
+    while (attempts <= retries) {
       try {
         const result = await action();
         return Result.ok(result);
       } catch (error) {
-        if (attemptsLeft <= 1) {
+        lastError = error;
+        attempts++;
+
+        if (attempts <= retries) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    return Result.fail({
+      message: "Max retries reached",
+      causedBy: lastError instanceof Error ? lastError : undefined,
+      context: {
+        retries,
+        attempts,
+        finalAttempt: true,
+      },
+    });
+  }
+
+  /**
+   * Executes an async operation with a timeout.
+   * Returns a failed Result if the operation exceeds the timeout.
+   *
+   * @template T - The type of the value returned by the operation
+   * @param action - The async operation to execute
+   * @param timeoutMs - Timeout in milliseconds
+   * @returns A Promise of a Result containing the operation result or timeout error
+   */
+  static async timeout<T>(
+    action: () => Promise<T>,
+    timeoutMs: number
+  ): Promise<Result<T>> {
+    try {
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Operation timed out after ${timeoutMs}ms`)),
+          timeoutMs
+        )
+      );
+
+      const result = await Promise.race([action(), timeoutPromise]);
+      return Result.ok(result);
+    } catch (error) {
+      return Result.fail({
+        message: error instanceof Error ? error.message : "Operation timed out",
+        causedBy: error instanceof Error ? error : undefined,
+        context: { timeoutMs },
+      });
+    }
+  }
+
+  /**
+   * Attempts to execute an async operation with retries.
+   * Returns a Result containing either the successful value or error details.
+   *
+   * @template T - The type of the value returned by the operation
+   * @param action - The async operation to execute
+   * @param maxAttempts - Maximum number of attempts (default: 3)
+   * @param delayMs - Delay between retries in milliseconds (default: 1000)
+   * @param timeoutMs - Timeout in milliseconds (optional)
+   * @returns A Promise of a Result containing either the operation's value or error
+   */
+  static async tryAsync<T>(
+    action: () => Promise<T>,
+    maxAttempts: number = 3,
+    delayMs: number = 1000,
+    timeoutMs?: number
+  ): Promise<Result<T>> {
+    let lastError: any;
+    let attempts = 0;
+
+    do {
+      try {
+        let result;
+        if (timeoutMs) {
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Operation timed out")),
+              timeoutMs
+            )
+          );
+          result = await Promise.race([action(), timeoutPromise]);
+        } else {
+          result = await action();
+        }
+        return Result.ok(result);
+      } catch (error) {
+        lastError = error;
+
+        if (error instanceof Error && error.message === "Operation timed out") {
           return Result.fail({
-            message: "Max retries reached",
-            causedBy: error instanceof Error ? error : undefined,
-            context: {
-              retries,
-              finalAttempt: true,
-            },
+            message: "Operation timed out",
+            context: { timeoutMs },
           });
         }
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        return attempt(attemptsLeft - 1);
-      }
-    };
 
-    return ResultAsync.from(attempt(retries));
+        if (attempts + 1 < maxAttempts && delayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      }
+    } while (++attempts < maxAttempts);
+
+    return Result.fail({
+      message:
+        lastError instanceof Error
+          ? lastError.message
+          : "Operation failed after retries",
+      causedBy: lastError instanceof Error ? lastError : undefined,
+      context: {
+        attempts,
+        maxAttempts,
+        delayMs,
+        timeoutMs,
+      },
+    });
   }
 }

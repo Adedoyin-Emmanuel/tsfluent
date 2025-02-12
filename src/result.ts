@@ -149,16 +149,22 @@ export class Result<T = void> {
   static merge<T>(results: Result<T>[]): Result<T[]> {
     const mergedResult = new Result<T[]>();
     const values: T[] = [];
+    let hasErrors = false;
 
     results.forEach((result) => {
       if (result.isSuccess() && result._value !== undefined) {
         values.push(result._value);
       }
-      result._errors.forEach((error) => mergedResult.addError(error));
+      if (result.isFailure()) {
+        hasErrors = true;
+        result._errors.forEach((error) => mergedResult.addError(error));
+      }
       result._successes.forEach((success) => mergedResult.addSuccess(success));
     });
 
-    if (mergedResult.isSuccess()) {
+    if (hasErrors) {
+      mergedResult._status = "failure";
+    } else {
       mergedResult._value = values;
     }
 

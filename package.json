@@ -28,7 +28,7 @@
     "url": "https://github.com/Adedoyin-Emmanuel/tsresult/issues"
   },
   "scripts": {
-    "build": "tsc src/**/*.ts --outDir dist",
+    "build": "tsc ",
     "test": "bun test --timeout 20000 --watch --verbose",
     "pub": "bun run clean && bun run build && standard-version && git push && npm publish",
     "prepare": "husky"

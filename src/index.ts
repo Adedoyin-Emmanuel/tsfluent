@@ -21,5 +21,5 @@ export const fromResult = ResultAsync.fromResult;
 export const fromPromise = ResultAsync.from;
 
 // Utility helpers
-export const tryAsync = AsyncUtils.try;
+export const tryAsync = AsyncUtils.tryAsync;
 export const combineAsync = AsyncUtils.combine;
