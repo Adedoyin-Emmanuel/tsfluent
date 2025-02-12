@@ -3,7 +3,7 @@
   "description": "Fluent Result Type for TypeScript",
   "module": "index.ts",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "./dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -13,7 +13,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/clipsave/tsresult.git"
+    "url": "git+https://github.com/Adedoyin-Emmanuel/tsresult.git"
   },
   "keywords": [
     "tsresult",
