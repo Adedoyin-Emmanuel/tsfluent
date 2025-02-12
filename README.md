@@ -1,5 +1,9 @@
 # TsFluent 🎖️
 
+[![CI](https://github.com/Adedoyin-Emmanuel/tsresult/actions/workflows/ci.yml/badge.svg)](https://github.com/Adedoyin-Emmanuel/tsresult/actions/workflows/ci.yml)
+[![npm version](https://badge.fury.io/js/tsfluent.svg)](https://badge.fury.io/js/tsfluent)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A powerful and fluent Result type implementation for TypeScript, providing a clean and expressive way to handle success and failure states in your code.
 
 ## Features ✨
