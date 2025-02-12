@@ -30,13 +30,24 @@
   "scripts": {
     "build": "tsc",
     "test": "bun test --timeout 20000 --watch --verbose",
-    "pub": "bun run clean && bun run build && standard-version && git push && npm publish"
+    "pub": "bun run clean && bun run build && standard-version && git push && npm publish",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.7.1",
+    "@commitlint/config-conventional": "^19.7.1",
     "@types/bun": "latest",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
     "standard-version": "^9.5.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "bun test",
+      "bun run build"
+    ]
   }
 }
