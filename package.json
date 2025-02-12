@@ -1,9 +1,40 @@
 {
-  "name": ".",
+  "name": "tsfluent",
+  "description": "Fluent Result Type for TypeScript",
   "module": "index.ts",
   "type": "module",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "author": "Adedoyin Emmanuel Adeniyi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clipsave/tsresult.git"
+  },
+  "keywords": [
+    "tsresult",
+    "result-type",
+    "result-type-ts",
+    "result-type-ts-fluent",
+    "fluent-result-ts",
+    "fluent-result-type-ts"
+  ],
+  "homepage": "https://github.com/Adedoyin-Emmanuel/tsresult#readme",
+  "bugs": {
+    "url": "https://github.com/Adedoyin-Emmanuel/tsresult/issues"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test --timeout 20000 --watch --verbose",
+    "pub": "bun run clean && bun run build && standard-version && git push && npm publish"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "standard-version": "^9.5.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
