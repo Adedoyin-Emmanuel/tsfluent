@@ -1,0 +1,27 @@
+# Source
+src/
+tests/
+examples/
+
+# Config files
+.github/
+.husky/
+.vscode/
+.editorconfig
+.eslintrc*
+.prettierrc*
+.gitignore
+.npmrc
+tsconfig.json
+commitlint.config.*
+
+# Development files
+*.log
+*.tgz
+coverage/
+.env*
+.DS_Store
+
+# Build process
+node_modules/
+bun.lockb 

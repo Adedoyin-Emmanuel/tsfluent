@@ -28,10 +28,16 @@
     "url": "https://github.com/Adedoyin-Emmanuel/tsresult/issues"
   },
   "scripts": {
-    "build": "tsc ",
+    "build": "tsc",
     "test": "bun test --timeout 20000 --watch --verbose",
-    "pub": "bun run clean && bun run build && standard-version && git push && npm publish",
-    "prepare": "husky"
+    "test:ci": "bun test --timeout 20000",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "bun run clean && bun run build",
+    "prepare": "husky",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:major": "standard-version --release-as major",
+    "release:patch": "standard-version --release-as patch"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.7.1",
