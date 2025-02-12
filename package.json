@@ -13,19 +13,19 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Adedoyin-Emmanuel/tsresult.git"
+    "url": "git+https://github.com/Adedoyin-Emmanuel/tsfluent.git"
   },
   "keywords": [
-    "tsresult",
+    "tsfluent",
     "result-type",
     "result-type-ts",
     "result-type-ts-fluent",
     "fluent-result-ts",
     "fluent-result-type-ts"
   ],
-  "homepage": "https://github.com/Adedoyin-Emmanuel/tsresult#readme",
+  "homepage": "https://github.com/Adedoyin-Emmanuel/tsfluent#readme",
   "bugs": {
-    "url": "https://github.com/Adedoyin-Emmanuel/tsresult/issues"
+    "url": "https://github.com/Adedoyin-Emmanuel/tsfluent/issues"
   },
   "scripts": {
     "build": "tsc",
