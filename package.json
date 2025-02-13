@@ -1,8 +1,8 @@
 {
   "name": "tsfluent",
   "description": "Fluent Result Type for TypeScript",
-  "version": "1.4.1",
-  "main": "./dist/src/index.js",
+  "version": "1.5.2",
+  "main": "./dist/index.js",
   "files": [
     "dist/**/*"
   ],
