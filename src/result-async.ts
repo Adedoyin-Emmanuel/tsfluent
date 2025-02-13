@@ -12,6 +12,7 @@ import { Result } from "./result";
  * the same functional programming principles as the synchronous Result class.
  *
  * @template T - The type of the value contained in the Result
+ * @template TContext - The type of the context associated with the Result
  * @example
  * ```typescript
  * const result = await ResultAsync.ok(fetchUserData());
@@ -21,13 +22,13 @@ import { Result } from "./result";
  *   .onFailure(errors => console.error('Failed:', errors));
  * ```
  */
-export class ResultAsync<T = void> {
+export class ResultAsync<T = void, TContext = Record<string, unknown>> {
   private _isSuccess: boolean;
   private _value?: Promise<T>;
   private _errors: IError[] = [];
   private readonly _successes: ISuccess[] = [];
-  private _metadata?: IResultMetadata;
-  private readonly _options: IResultOptions = {
+  private _metadata?: IResultMetadata<TContext>;
+  private readonly _options: IResultOptions<TContext> = {
     defaultValueWhenFailure: false,
     preserveErrorsOrder: true,
   };
@@ -39,7 +40,10 @@ export class ResultAsync<T = void> {
    * @param value - The value to store in the Result
    * @param options - Configuration options for the Result
    */
-  protected constructor(value?: T | Promise<T>, options?: IResultOptions) {
+  protected constructor(
+    value?: T | Promise<T>,
+    options?: IResultOptions<TContext>
+  ) {
     this._isSuccess = true;
 
     if (value instanceof Promise) {
@@ -74,7 +78,9 @@ export class ResultAsync<T = void> {
    * @param value - The value to store in the Result
    * @returns A Promise of a new successful ResultAsync instance
    */
-  static async okAsync<T>(value?: T | Promise<T>): Promise<ResultAsync<T>>;
+  static async okAsync<T, TContext = Record<string, unknown>>(
+    value?: T | Promise<T>
+  ): Promise<ResultAsync<T, TContext>>;
   /**
    * Creates a successful Result with the given value and metadata.
    *
@@ -83,10 +89,10 @@ export class ResultAsync<T = void> {
    * @param metadata - Metadata to attach to the Result
    * @returns A Promise of a new successful ResultAsync instance
    */
-  static async okAsync<T>(
+  static async okAsync<T, TContext = Record<string, unknown>>(
     value: T | Promise<T>,
-    metadata: IResultMetadata
-  ): Promise<ResultAsync<T>>;
+    metadata: IResultMetadata<TContext>
+  ): Promise<ResultAsync<T, TContext>>;
   /**
    * Creates a successful Result with the given value and options.
    *
@@ -95,24 +101,27 @@ export class ResultAsync<T = void> {
    * @param options - Configuration options for the Result
    * @returns A Promise of a new successful ResultAsync instance
    */
-  static async okAsync<T>(
+  static async okAsync<T, TContext = Record<string, unknown>>(
     value: T | Promise<T>,
-    options: IResultOptions
-  ): Promise<ResultAsync<T>>;
-  static async okAsync<T>(
+    options: IResultOptions<TContext>
+  ): Promise<ResultAsync<T, TContext>>;
+  static async okAsync<T, TContext = Record<string, unknown>>(
     value?: T | Promise<T>,
-    metadataOrOptions?: IResultMetadata | IResultOptions
-  ): Promise<ResultAsync<T>> {
+    metadataOrOptions?: IResultMetadata<TContext> | IResultOptions<TContext>
+  ): Promise<ResultAsync<T, TContext>> {
     if (!metadataOrOptions) {
-      return new ResultAsync<T>(value);
+      return new ResultAsync<T, TContext>(value);
     }
 
     if ("metadata" in metadataOrOptions) {
-      return new ResultAsync<T>(value, metadataOrOptions as IResultOptions);
+      return new ResultAsync<T, TContext>(
+        value,
+        metadataOrOptions as IResultOptions<TContext>
+      );
     }
 
-    return new ResultAsync<T>(value, {
-      metadata: metadataOrOptions as IResultMetadata,
+    return new ResultAsync<T, TContext>(value, {
+      metadata: metadataOrOptions as IResultMetadata<TContext>,
     });
   }
 
@@ -123,7 +132,9 @@ export class ResultAsync<T = void> {
    * @param errorMessage - The error message
    * @returns A Promise of a new failed ResultAsync instance
    */
-  static async failAsync<T>(errorMessage: string): Promise<ResultAsync<T>>;
+  static async failAsync<T, TContext = Record<string, unknown>>(
+    errorMessage: string
+  ): Promise<ResultAsync<T, TContext>>;
   /**
    * Creates a failed Result with the given error object.
    *
@@ -131,7 +142,9 @@ export class ResultAsync<T = void> {
    * @param error - The error object
    * @returns A Promise of a new failed ResultAsync instance
    */
-  static async failAsync<T>(error: IError): Promise<ResultAsync<T>>;
+  static async failAsync<T, TContext = Record<string, unknown>>(
+    error: IError
+  ): Promise<ResultAsync<T, TContext>>;
   /**
    * Creates a failed Result with the given array of errors.
    *
@@ -139,12 +152,14 @@ export class ResultAsync<T = void> {
    * @param errors - Array of error objects
    * @returns A Promise of a new failed ResultAsync instance
    */
-  static async failAsync<T>(errors: IError[]): Promise<ResultAsync<T>>;
-  static async failAsync<T>(
+  static async failAsync<T, TContext = Record<string, unknown>>(
+    errors: IError[]
+  ): Promise<ResultAsync<T, TContext>>;
+  static async failAsync<T, TContext = Record<string, unknown>>(
     error: string | IError | IError[],
-    metadata?: IResultMetadata
-  ): Promise<ResultAsync<T>> {
-    const result = new ResultAsync<T>(undefined, { metadata });
+    metadata?: IResultMetadata<TContext>
+  ): Promise<ResultAsync<T, TContext>> {
+    const result = new ResultAsync<T, TContext>(undefined, { metadata });
     result._isSuccess = false;
 
     if (Array.isArray(error)) {
@@ -164,8 +179,10 @@ export class ResultAsync<T = void> {
    * @param results - Array of ResultAsync instances to merge
    * @returns A Promise of a new ResultAsync instance containing an array of values
    */
-  static async merge<T>(results: ResultAsync<T>[]): Promise<ResultAsync<T[]>> {
-    const mergedResult = new ResultAsync<T[]>();
+  static async merge<T, TContext = Record<string, unknown>>(
+    results: ResultAsync<T, TContext>[]
+  ): Promise<ResultAsync<T[], TContext>> {
+    const mergedResult = new ResultAsync<T[], TContext>();
     const valuePromises: Promise<T>[] = [];
     let hasErrors = false;
 
@@ -197,18 +214,20 @@ export class ResultAsync<T = void> {
    * @param result - The synchronous Result to convert
    * @returns A new ResultAsync instance
    */
-  static fromResult<T>(result: Result<T>): ResultAsync<T> {
-    const asyncResult = new ResultAsync<T>(
+  static fromResult<T, TContext = Record<string, unknown>>(
+    result: Result<T, TContext>
+  ): ResultAsync<T, TContext> {
+    const asyncResult = new ResultAsync<T, TContext>(
       result.isSuccess ? result.value : undefined
     );
 
     if (result.isFailure) {
       asyncResult._isSuccess = false;
-      result.getErrors().forEach((error) => asyncResult.addError(error));
+      result.errors.forEach((error) => asyncResult.addError(error));
     }
 
     result.getSuccesses().forEach((success) => asyncResult.addSuccess(success));
-    const metadata = result.getMetadata();
+    const metadata = result.metadata;
     if (metadata) {
       asyncResult.withMetadata(metadata);
     }
@@ -289,8 +308,17 @@ export class ResultAsync<T = void> {
    *
    * @returns The metadata object or undefined if none exists
    */
-  public getMetadata(): IResultMetadata | undefined {
+  public get metadata(): IResultMetadata<TContext> | undefined {
     return this._metadata ? { ...this._metadata } : undefined;
+  }
+
+  /**
+   * Gets the metadata associated with the Result.
+   * @deprecated Use the metadata property instead
+   * @returns The metadata object or undefined if none exists
+   */
+  public getMetadata(): IResultMetadata<TContext> | undefined {
+    return this.metadata;
   }
 
   // Builder methods
@@ -300,7 +328,7 @@ export class ResultAsync<T = void> {
    * @param error - The error message or object to add
    * @returns The Result instance for chaining
    */
-  public withError(error: string | IError): ResultAsync<T> {
+  public withError(error: string | IError): this {
     this.addError(typeof error === "string" ? { message: error } : error);
     this._isSuccess = false;
     return this;
@@ -312,7 +340,7 @@ export class ResultAsync<T = void> {
    * @param success - The success message or object to add
    * @returns The Result instance for chaining
    */
-  public withSuccess(success: string | ISuccess): ResultAsync<T> {
+  public withSuccess(success: string | ISuccess): this {
     this.addSuccess(
       typeof success === "string"
         ? { message: success, timestamp: new Date() }
@@ -327,7 +355,7 @@ export class ResultAsync<T = void> {
    * @param value - The value to set
    * @returns Promise of the Result instance for chaining
    */
-  public async withValue(value: T | Promise<T>): Promise<ResultAsync<T>> {
+  public async withValue(value: T | Promise<T>): Promise<this> {
     if (this.isSuccess) {
       this._value = value instanceof Promise ? value : Promise.resolve(value);
     }
@@ -340,7 +368,7 @@ export class ResultAsync<T = void> {
    * @param context - The context object to add
    * @returns The Result instance for chaining
    */
-  public withContext(context: Record<string, unknown>): ResultAsync<T> {
+  public withContext(context: Record<string, unknown>): this {
     if (this._errors.length > 0) {
       this._errors[this._errors.length - 1].context = {
         ...this._errors[this._errors.length - 1].context,
@@ -355,7 +383,7 @@ export class ResultAsync<T = void> {
    *
    * @returns The Result instance for chaining
    */
-  public clearErrors(): ResultAsync<T> {
+  public clearErrors(): this {
     this._errors = [];
     this._isSuccess = true;
     return this;
@@ -366,7 +394,7 @@ export class ResultAsync<T = void> {
    *
    * @returns Promise of the Result instance for chaining
    */
-  public async log(): Promise<ResultAsync<T>> {
+  public async log(): Promise<this> {
     console.group("AsyncResult Log");
     console.log("Status:", this.isSuccess ? "success" : "failure");
     console.log("Value:", await this._value);
@@ -396,7 +424,7 @@ export class ResultAsync<T = void> {
    * @param metadata - The metadata object to add
    * @returns The Result instance for chaining
    */
-  public withMetadata(metadata: IResultMetadata): ResultAsync<T> {
+  public withMetadata(metadata: IResultMetadata<TContext>): this {
     this._metadata = {
       ...this._metadata,
       ...metadata,
@@ -410,11 +438,11 @@ export class ResultAsync<T = void> {
    *
    * @returns Promise of a synchronous Result instance
    */
-  public async toResult(): Promise<Result<T>> {
+  public async toResult(): Promise<Result<T, TContext>> {
     const value = await this._value;
     const result = this.isSuccess
-      ? Result.ok<T>(value)
-      : Result.fail<T>(this.getErrors());
+      ? Result.ok<T, TContext>(value)
+      : Result.fail<T, TContext>(this.getErrors());
     if (this._metadata) {
       result.withMetadata(this._metadata);
     }
@@ -430,7 +458,7 @@ export class ResultAsync<T = void> {
    */
   public async onSuccess(
     callback: (value: T) => void | Promise<void>
-  ): Promise<ResultAsync<T>> {
+  ): Promise<this> {
     if (this.isSuccess && this._value) {
       const value = await this._value;
       await callback(value as T);
@@ -446,9 +474,9 @@ export class ResultAsync<T = void> {
    */
   public async onFailure(
     callback: (errors: IError[]) => void | Promise<void>
-  ): Promise<ResultAsync<T>> {
+  ): Promise<this> {
     if (this.isFailure) {
-      await callback(this.getErrors());
+      await callback(this.errors);
     }
     return this;
   }
@@ -463,16 +491,24 @@ export class ResultAsync<T = void> {
    */
   public async map<U>(
     func: (value: T) => Promise<U> | U
-  ): Promise<ResultAsync<U>> {
+  ): Promise<ResultAsync<U, TContext>> {
     if (this.isFailure) {
-      return ResultAsync.failAsync(this.getErrors());
+      const result = await ResultAsync.failAsync<U, TContext>(this.getErrors());
+      if (this._metadata) {
+        result.withMetadata(this._metadata);
+      }
+      return result;
     }
     if (!this._value) {
-      return ResultAsync.failAsync("No value present");
+      return ResultAsync.failAsync<U, TContext>("No value present");
     }
     const value = await this._value;
     const mappedValue = await func(value as T);
-    return ResultAsync.okAsync(mappedValue);
+    const result = await ResultAsync.okAsync<U, TContext>(mappedValue);
+    if (this._metadata) {
+      result.withMetadata(this._metadata);
+    }
+    return result;
   }
 
   /**
@@ -484,16 +520,26 @@ export class ResultAsync<T = void> {
    * @returns Promise of the new Result
    */
   public async bind<U>(
-    func: (value: T) => Promise<ResultAsync<U>> | ResultAsync<U>
-  ): Promise<ResultAsync<U>> {
+    func: (
+      value: T
+    ) => Promise<ResultAsync<U, TContext>> | ResultAsync<U, TContext>
+  ): Promise<ResultAsync<U, TContext>> {
     if (this.isFailure) {
-      return ResultAsync.failAsync(this.getErrors());
+      const result = await ResultAsync.failAsync<U, TContext>(this.getErrors());
+      if (this._metadata) {
+        result.withMetadata(this._metadata);
+      }
+      return result;
     }
     if (!this._value) {
-      return ResultAsync.failAsync("No value present");
+      return ResultAsync.failAsync<U, TContext>("No value present");
     }
     const value = await this._value;
-    return func(value as T);
+    const result = await func(value as T);
+    if (this._metadata) {
+      result.withMetadata(this._metadata);
+    }
+    return result;
   }
 
   /**
@@ -503,9 +549,7 @@ export class ResultAsync<T = void> {
    * @param action - Function to execute with the Result value
    * @returns Promise of the Result instance for chaining
    */
-  public async tap(
-    action: (value: T) => void | Promise<void>
-  ): Promise<ResultAsync<T>> {
+  public async tap(action: (value: T) => void | Promise<void>): Promise<this> {
     if (this.isSuccess && this._value) {
       const value = await this._value;
       await action(value as T);

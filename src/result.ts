@@ -23,13 +23,13 @@ import type {
  * }
  * ```
  */
-export class Result<T = void> {
+export class Result<T = void, TContext = Record<string, unknown>> {
   private _isSuccess: boolean;
   private _value?: T;
   private _errors: IError[] = [];
   private _successes: ISuccess[] = [];
-  private _metadata?: IResultMetadata;
-  private _options: IResultOptions = {
+  private _metadata?: IResultMetadata<TContext>;
+  private _options: IResultOptions<TContext> = {
     defaultValueWhenFailure: false,
     preserveErrorsOrder: true,
   };
@@ -41,7 +41,7 @@ export class Result<T = void> {
    * @param value - The value to store in the Result
    * @param options - Configuration options for the Result
    */
-  protected constructor(value?: T, options?: IResultOptions) {
+  protected constructor(value?: T, options?: IResultOptions<TContext>) {
     this._value = value;
     this._isSuccess = true;
 
@@ -63,7 +63,9 @@ export class Result<T = void> {
    * @param value - The value to store in the Result
    * @returns A new successful Result instance
    */
-  static ok<T>(value?: T): Result<T>;
+  static ok<T, TContext = Record<string, unknown>>(
+    value?: T
+  ): Result<T, TContext>;
   /**
    * Creates a successful Result with the given value and metadata.
    *
@@ -72,7 +74,10 @@ export class Result<T = void> {
    * @param metadata - Metadata to attach to the Result
    * @returns A new successful Result instance
    */
-  static ok<T>(value: T, metadata: IResultMetadata): Result<T>;
+  static ok<T, TContext = Record<string, unknown>>(
+    value: T,
+    metadata: IResultMetadata<TContext>
+  ): Result<T, TContext>;
   /**
    * Creates a successful Result with the given value and options.
    *
@@ -81,21 +86,27 @@ export class Result<T = void> {
    * @param options - Configuration options for the Result
    * @returns A new successful Result instance
    */
-  static ok<T>(value: T, options: IResultOptions): Result<T>;
-  static ok<T>(
+  static ok<T, TContext = Record<string, unknown>>(
+    value: T,
+    options: IResultOptions<TContext>
+  ): Result<T, TContext>;
+  static ok<T, TContext = Record<string, unknown>>(
     value?: T,
-    metadataOrOptions?: IResultMetadata | IResultOptions
-  ): Result<T> {
+    metadataOrOptions?: IResultMetadata<TContext> | IResultOptions<TContext>
+  ): Result<T, TContext> {
     if (!metadataOrOptions) {
-      return new Result<T>(value);
+      return new Result<T, TContext>(value);
     }
 
     if ("metadata" in metadataOrOptions) {
-      return new Result<T>(value, metadataOrOptions as IResultOptions);
+      return new Result<T, TContext>(
+        value,
+        metadataOrOptions as IResultOptions<TContext>
+      );
     }
 
-    return new Result<T>(value, {
-      metadata: metadataOrOptions as IResultMetadata,
+    return new Result<T, TContext>(value, {
+      metadata: metadataOrOptions as IResultMetadata<TContext>,
     });
   }
 
@@ -106,7 +117,9 @@ export class Result<T = void> {
    * @param errorMessage - The error message
    * @returns A new failed Result instance
    */
-  static fail<T>(errorMessage: string): Result<T>;
+  static fail<T, TContext = Record<string, unknown>>(
+    errorMessage: string
+  ): Result<T, TContext>;
   /**
    * Creates a failed Result with the given error object.
    *
@@ -114,7 +127,9 @@ export class Result<T = void> {
    * @param error - The error object
    * @returns A new failed Result instance
    */
-  static fail<T>(error: IError): Result<T>;
+  static fail<T, TContext = Record<string, unknown>>(
+    error: IError
+  ): Result<T, TContext>;
   /**
    * Creates a failed Result with the given array of errors.
    *
@@ -122,12 +137,14 @@ export class Result<T = void> {
    * @param errors - Array of error objects
    * @returns A new failed Result instance
    */
-  static fail<T>(errors: IError[]): Result<T>;
-  static fail<T>(
+  static fail<T, TContext = Record<string, unknown>>(
+    errors: IError[]
+  ): Result<T, TContext>;
+  static fail<T, TContext = Record<string, unknown>>(
     error: string | IError | IError[],
-    metadata?: IResultMetadata
-  ): Result<T> {
-    const result = new Result<T>(undefined, { metadata });
+    metadata?: IResultMetadata<TContext>
+  ): Result<T, TContext> {
+    const result = new Result<T, TContext>(undefined, { metadata });
     result._isSuccess = false;
 
     if (Array.isArray(error)) {
@@ -147,8 +164,10 @@ export class Result<T = void> {
    * @param results - Array of Result instances to merge
    * @returns A new Result instance containing an array of values
    */
-  static merge<T>(results: Result<T>[]): Result<T[]> {
-    const mergedResult = new Result<T[]>();
+  static merge<T, TContext = Record<string, unknown>>(
+    results: Result<T, TContext>[]
+  ): Result<T[], TContext> {
+    const mergedResult = new Result<T[], TContext>();
     const values: T[] = [];
     let hasErrors = false;
 
@@ -158,9 +177,12 @@ export class Result<T = void> {
       }
       if (result.isFailure) {
         hasErrors = true;
-        result._errors.forEach((error) => mergedResult.addError(error));
+        result.errors.forEach((error) => mergedResult.addError(error));
       }
       result._successes.forEach((success) => mergedResult.addSuccess(success));
+      if (result._metadata) {
+        mergedResult.withMetadata(result._metadata);
+      }
     });
 
     if (hasErrors) {
@@ -220,8 +242,17 @@ export class Result<T = void> {
    *
    * @returns The metadata object or undefined if none exists
    */
-  public getMetadata(): IResultMetadata | undefined {
+  public get metadata(): IResultMetadata<TContext> | undefined {
     return this._metadata ? { ...this._metadata } : undefined;
+  }
+
+  /**
+   * Gets the metadata associated with the Result.
+   * @deprecated Use the metadata property instead
+   * @returns The metadata object or undefined if none exists
+   */
+  public getMetadata(): IResultMetadata<TContext> | undefined {
+    return this.metadata;
   }
 
   /**
@@ -230,7 +261,7 @@ export class Result<T = void> {
    * @param error - The error message or object to add
    * @returns The Result instance for chaining
    */
-  public withError(error: string | IError): Result<T> {
+  public withError(error: string | IError): Result<T, TContext> {
     this.addError(typeof error === "string" ? { message: error } : error);
     this._isSuccess = false;
     return this;
@@ -242,7 +273,7 @@ export class Result<T = void> {
    * @param success - The success message or object to add
    * @returns The Result instance for chaining
    */
-  public withSuccess(success: string | ISuccess): Result<T> {
+  public withSuccess(success: string | ISuccess): Result<T, TContext> {
     this.addSuccess(
       typeof success === "string"
         ? { message: success, timestamp: new Date() }
@@ -257,7 +288,7 @@ export class Result<T = void> {
    * @param value - The value to set
    * @returns The Result instance for chaining
    */
-  public withValue(value: T): Result<T> {
+  public withValue(value: T): Result<T, TContext> {
     if (this.isSuccess) {
       this._value = value;
     }
@@ -270,7 +301,7 @@ export class Result<T = void> {
    * @param context - The context object to add
    * @returns The Result instance for chaining
    */
-  public withContext(context: Record<string, unknown>): Result<T> {
+  public withContext(context: Record<string, unknown>): Result<T, TContext> {
     if (this._errors.length > 0) {
       this._errors[this._errors.length - 1].context = {
         ...this._errors[this._errors.length - 1].context,
@@ -285,7 +316,7 @@ export class Result<T = void> {
    *
    * @returns The Result instance for chaining
    */
-  public clearErrors(): Result<T> {
+  public clearErrors(): Result<T, TContext> {
     this._errors = [];
     this._isSuccess = true;
     return this;
@@ -296,7 +327,7 @@ export class Result<T = void> {
    *
    * @returns The Result instance for chaining
    */
-  public log(): Result<T> {
+  public log(): Result<T, TContext> {
     console.group("Result Log");
     console.log("Status:", this.isSuccess ? "success" : "failure");
     console.log("Value:", this._value);
@@ -349,7 +380,9 @@ export class Result<T = void> {
    * @param metadata - The metadata object to add
    * @returns The Result instance for chaining
    */
-  public withMetadata(metadata: IResultMetadata): Result<T> {
+  public withMetadata(
+    metadata: IResultMetadata<TContext>
+  ): Result<T, TContext> {
     this._metadata = {
       ...this._metadata,
       ...metadata,

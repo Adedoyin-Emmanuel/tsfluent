@@ -63,13 +63,13 @@ export type ResultValueType<T> = T extends Result<infer U> ? U : never;
  * Metadata structure for Result objects.
  * Used to attach additional information to Results.
  */
-export interface IResultMetadata {
+export interface IResultMetadata<TContext = Record<string, unknown>> {
   /** Optional metadata key-value pairs */
   metadata?: IMetadata;
   /** Optional message describing the metadata */
   message?: string;
   /** Additional contextual information */
-  context?: Record<string, unknown>;
+  context?: TContext;
   /** When the metadata was created */
   timestamp?: Date;
 }
@@ -78,11 +78,11 @@ export interface IResultMetadata {
  * Configuration options for Result objects.
  * Controls behavior of error handling and value retrieval.
  */
-export interface IResultOptions {
+export interface IResultOptions<TContext = Record<string, unknown>> {
   /** Whether to return a default value when in failure state instead of throwing */
   defaultValueWhenFailure?: boolean;
   /** Whether to preserve the order of errors (true) or reverse them (false) */
   preserveErrorsOrder?: boolean;
   /** Optional metadata to attach to the Result */
-  metadata?: IResultMetadata;
+  metadata?: IResultMetadata<TContext>;
 }

@@ -14,6 +14,8 @@ A powerful and fluent Result type implementation for TypeScript, providing a cle
 - 🛡️ Comprehensive error handling
 - 📦 Zero dependencies
 - 🎨 Clean and expressive syntax
+- 🌟 Generic context type support
+- 🔍 Rich metadata handling
 
 ## Installation 📦
 
@@ -50,8 +52,31 @@ if (success.isSuccess) {
 }
 
 if (failure.isFailure) {
-  console.log(failure.getErrors()[0].message); // "Something went wrong"
+  console.log(failure.errors[0].message); // "Something went wrong"
 }
+```
+
+### Using Generic Context Type
+
+```typescript
+// Define your custom context type
+interface UserContext {
+  userId: string;
+  timestamp: Date;
+  environment: "dev" | "prod";
+}
+
+// Create a result with typed context
+const result = Result.ok<number, UserContext>(42).withMetadata({
+  context: {
+    userId: "123",
+    timestamp: new Date(),
+    environment: "prod",
+  },
+});
+
+// Type-safe access to context
+const context = result.metadata?.context; // Type is UserContext | undefined
 ```
 
 ### Chaining Operations
@@ -60,7 +85,10 @@ if (failure.isFailure) {
 const result = Result.ok(5)
   .withValue(10)
   .withSuccess("Value updated")
-  .withMetadata({ timestamp: new Date() });
+  .withMetadata({
+    timestamp: new Date(),
+    context: { source: "user-input" },
+  });
 
 // Access the final value using property
 if (result.isSuccess) {
@@ -74,25 +102,40 @@ if (result.isSuccess) {
 ```typescript
 import { ResultAsync } from "tsfluent";
 
-const asyncResult = await ResultAsync.from(
-  fetch("https://api.example.com/data").then((r) => r.json())
-);
+interface ApiContext {
+  requestId: string;
+  endpoint: string;
+}
+
+const asyncResult = await ResultAsync.from<Response, ApiContext>(
+  fetch("https://api.example.com/data")
+).withMetadata({
+  context: {
+    requestId: "req-123",
+    endpoint: "/data",
+  },
+});
 
 // Handle the result using properties
 if (asyncResult.isSuccess) {
   const data = await asyncResult.value;
-  // Process data
+  console.log(asyncResult.metadata?.context); // Type-safe access to ApiContext
 } else {
-  console.error(asyncResult.getErrors());
+  console.error(asyncResult.errors);
 }
 ```
 
-### Error Handling
+### Error Handling with Context
 
 ```typescript
 import { AsyncUtils } from "tsfluent";
 
-const result = await AsyncUtils.tryAsync(
+interface RetryContext {
+  attempts: number;
+  lastAttempt: Date;
+}
+
+const result = await AsyncUtils.tryAsync<string, RetryContext>(
   async () => {
     // Some async operation that might fail
     throw new Error("Oops!");
@@ -103,52 +146,55 @@ const result = await AsyncUtils.tryAsync(
 
 // Handle errors gracefully using properties
 if (result.isFailure) {
-  console.error(result.getErrors()); // Array of errors with timestamps
+  console.error(result.errors); // Array of errors with timestamps
+  console.log(result.metadata?.context); // Access retry context
 }
 ```
 
 ## API Reference 📚
 
-### Result<T>
+### Result<T, TContext>
 
-The main Result type that wraps a success value of type T.
+The main Result type that wraps a success value of type T with an optional context type TContext.
 
 #### Properties
 
 - `isSuccess: boolean` - Whether the result is successful
 - `isFailure: boolean` - Whether the result is a failure
 - `value: T` - Gets the success value (throws if accessing on failure)
+- `errors: IError[]` - Gets the array of errors
+- `metadata?: IResultMetadata<TContext>` - Gets the metadata with typed context
 
 #### Static Methods
 
-- `ok<T>(value: T): Result<T>` - Creates a success result
-- `fail(error: string | IError | IError[]): Result<T>` - Creates a failure result
-- `merge<T>(results: Result<T>[]): Result<T[]>` - Merges multiple results
+- `ok<T, TContext>(value: T, metadata?: IResultMetadata<TContext>): Result<T, TContext>` - Creates a success result
+- `fail<T, TContext>(error: string | IError | IError[]): Result<T, TContext>` - Creates a failure result
+- `merge<T, TContext>(results: Result<T, TContext>[]): Result<T[], TContext>` - Merges multiple results
 
 #### Instance Methods
 
-- `getErrors(): IError[]` - Gets the array of errors
-- `withError(error: string | IError): Result<T>` - Adds an error
-- `withSuccess(success: string | ISuccess): Result<T>` - Adds a success message
-- `withValue(value: T): Result<T>` - Sets the value
-- `withMetadata(metadata: IResultMetadata): Result<T>` - Adds metadata
+- `withError(error: string | IError): Result<T, TContext>` - Adds an error
+- `withSuccess(success: string | ISuccess): Result<T, TContext>` - Adds a success message
+- `withValue(value: T): Result<T, TContext>` - Sets the value
+- `withMetadata(metadata: IResultMetadata<TContext>): Result<T, TContext>` - Adds metadata
 
-### ResultAsync<T>
+### ResultAsync<T, TContext>
 
-Asynchronous version of Result with Promise support.
+Asynchronous version of Result with Promise support and context type.
 
 #### Properties
 
 - `isSuccess: boolean` - Whether the result is successful
 - `isFailure: boolean` - Whether the result is a failure
 - `value: Promise<T>` - Gets the success value (throws if accessing on failure)
+- `metadata?: IResultMetadata<TContext>` - Gets the metadata with typed context
 
 #### Static Methods
 
-- `okAsync<T>(value: T | Promise<T>): Promise<ResultAsync<T>>` - Creates a success result
-- `failAsync(error: string | IError | IError[]): Promise<ResultAsync<T>>` - Creates a failure result
+- `okAsync<T, TContext>(value: T | Promise<T>, metadata?: IResultMetadata<TContext>): Promise<ResultAsync<T, TContext>>` - Creates a success result
+- `failAsync<T, TContext>(error: string | IError | IError[]): Promise<ResultAsync<T, TContext>>` - Creates a failure result
 - `from<T>(promise: Promise<T>): Promise<ResultAsync<T>>` - Creates from a Promise
-- `fromResult<T>(result: Result<T>): ResultAsync<T>` - Creates from a Result
+- `fromResult<T, TContext>(result: Result<T, TContext>): ResultAsync<T, TContext>` - Creates from a Result
 
 ## Contributing 🤝
 
@@ -180,10 +226,19 @@ bun run build
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Author ✍️
+## Authors ✍️
 
-Adedoyin Emmanuel Adeniyi
+<a href="https://github.com/Adedoyin-Emmanuel/tsfluent/graphs/contributors">
+   <img src="https://contrib.rocks/image?repo=adedoyin-emmanuel/tsfluent&max=100&columns=20&anon=1&size=500" alt="Contributors" />
+</a>
+
+## Acknowledgments 🫡
+
+Tsfluent takes heavy inspiration from the following projects:
+
+- [`FluentsResult`](https://github.com/altmann/FluentResults) ([Michael Altmann](https://github.com/altmann))
+- [`Neverthrow`](https://github.com/supermacro/neverthrow) ([Giorgio Delgado](https://github.com/supermacro))
 
 ## Support 💪
 
-If you find this package helpful, please give it a ⭐️ on [GitHub](https://github.com/Adedoyin-Emmanuel/tsresult)!
+If you find this package helpful, please give it a ⭐️ on [GitHub](https://github.com/Adedoyin-Emmanuel/tsfluent)!

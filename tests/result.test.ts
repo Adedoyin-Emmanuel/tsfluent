@@ -19,6 +19,7 @@ describe("Result", () => {
       const result = Result.ok(42);
       expect(result.isSuccess).toBe(true);
       expect(result.isFailure).toBe(false);
+      expect(result?.metadata?.context).toBeUndefined();
       expect(result.value).toBe(42);
     });
 
