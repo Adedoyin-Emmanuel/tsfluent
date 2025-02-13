@@ -1,6 +1,6 @@
 # TsFluent 🎖️
 
-[![CI](https://github.com/Adedoyin-Emmanuel/tsresult/actions/workflows/ci.yml/badge.svg)](https://github.com/Adedoyin-Emmanuel/tsresult/actions/workflows/ci.yml)
+[![CI](https://github.com/Adedoyin-Emmanuel/tsfluent/actions/workflows/ci.yml/badge.svg)](https://github.com/Adedoyin-Emmanuel/tsfluent/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/tsfluent.svg)](https://badge.fury.io/js/tsfluent)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -10,7 +10,7 @@ A powerful and fluent Result type implementation for TypeScript, providing a cle
 
 - 🎯 Type-safe Result handling
 - 🔄 Chainable fluent API
-- ⚡ Async support with Result promises
+- ⚡ Async support with ResultAsync
 - 🛡️ Comprehensive error handling
 - 📦 Zero dependencies
 - 🎨 Clean and expressive syntax
@@ -45,12 +45,12 @@ const success = Result.ok("Hello, World!");
 const failure = Result.fail("Something went wrong");
 
 // Checking result state
-if (success.isOk()) {
+if (success.isSuccess()) {
   console.log(success.getValue()); // "Hello, World!"
 }
 
-if (failure.isFail()) {
-  console.log(failure.getError()); // "Something went wrong"
+if (failure.isFailure()) {
+  console.log(failure.getErrors()[0].message); // "Something went wrong"
 }
 ```
 
@@ -58,71 +58,88 @@ if (failure.isFail()) {
 
 ```typescript
 const result = Result.ok(5)
-  .map((value) => value * 2)
-  .flatMap((value) => Result.ok(value + 3))
-  .mapError((error) => `Processed error: ${error}`);
+  .withValue(10)
+  .withSuccess("Value updated")
+  .withMetadata({ timestamp: new Date() });
 
 // Access the final value
-if (result.isOk()) {
-  console.log(result.getValue()); // 13
+if (result.isSuccess()) {
+  console.log(result.getValue()); // 10
+  console.log(result.getSuccesses()); // [{message: "Value updated", timestamp: Date}]
 }
 ```
 
 ### Async Operations
 
 ```typescript
-const asyncResult = await Result.fromAsync(async () => {
-  const response = await fetch("https://api.example.com/data");
-  if (!response.ok) throw new Error("API request failed");
-  return response.json();
-});
+import { ResultAsync } from "tsfluent";
+
+const asyncResult = await ResultAsync.from(
+  fetch("https://api.example.com/data").then((r) => r.json())
+);
 
 // Handle the result
-if (asyncResult.isOk()) {
-  const data = asyncResult.getValue();
+if (asyncResult.isSuccess()) {
+  const data = await asyncResult.getValue();
   // Process data
 } else {
-  console.error(asyncResult.getError());
+  console.error(asyncResult.getErrors());
 }
 ```
 
 ### Error Handling
 
 ```typescript
-const result = Result.try(() => {
-  // Some code that might throw
-  throw new Error("Oops!");
-});
+import { AsyncUtils } from "tsfluent";
+
+const result = await AsyncUtils.tryAsync(
+  async () => {
+    // Some async operation that might fail
+    throw new Error("Oops!");
+  },
+  3, // max attempts
+  1000 // delay between retries in ms
+);
 
 // Handle errors gracefully
-if (result.isFail()) {
-  console.error(result.getError()); // Error: Oops!
+if (result.isFailure()) {
+  console.error(result.getErrors()); // Array of errors with timestamps
 }
 ```
 
 ## API Reference 📚
 
-### Result<T, E>
+### Result<T>
 
-The main Result type that wraps a success value of type T or an error value of type E.
+The main Result type that wraps a success value of type T.
 
 #### Static Methods
 
-- `ok<T>(value: T): Result<T, never>` - Creates a success result
-- `fail<E>(error: E): Result<never, E>` - Creates a failure result
-- `try<T>(fn: () => T): Result<T, Error>` - Wraps a function that might throw
-- `fromAsync<T>(promise: Promise<T>): Promise<Result<T, Error>>` - Wraps an async operation
+- `ok<T>(value: T): Result<T>` - Creates a success result
+- `fail(error: string | IError | IError[]): Result<T>` - Creates a failure result
+- `merge<T>(results: Result<T>[]): Result<T[]>` - Merges multiple results
 
 #### Instance Methods
 
-- `isOk(): boolean` - Checks if result is successful
-- `isFail(): boolean` - Checks if result is a failure
+- `isSuccess(): boolean` - Checks if result is successful
+- `isFailure(): boolean` - Checks if result is a failure
 - `getValue(): T` - Gets the success value
-- `getError(): E` - Gets the error value
-- `map<U>(fn: (value: T) => U): Result<U, E>` - Maps success value
-- `mapError<F>(fn: (error: E) => F): Result<T, F>` - Maps error value
-- `flatMap<U>(fn: (value: T) => Result<U, E>): Result<U, E>` - Chains results
-- `match<U>(onOk: (value: T) => U, onFail: (error: E) => U): U` - Pattern matching
+- `getErrors(): IError[]` - Gets the array of errors
+- `withError(error: string | IError): Result<T>` - Adds an error
+- `withSuccess(success: string | ISuccess): Result<T>` - Adds a success message
+- `withValue(value: T): Result<T>` - Sets the value
+- `withMetadata(metadata: IResultMetadata): Result<T>` - Adds metadata
+
+### ResultAsync<T>
+
+Asynchronous version of Result with Promise support.
+
+#### Static Methods
+
+- `okAsync<T>(value: T | Promise<T>): Promise<ResultAsync<T>>` - Creates a success result
+- `failAsync(error: string | IError | IError[]): Promise<ResultAsync<T>>` - Creates a failure result
+- `from<T>(promise: Promise<T>): Promise<ResultAsync<T>>` - Creates from a Promise
+- `fromResult<T>(result: Result<T>): ResultAsync<T>` - Creates from a Result
 
 ## Contributing 🤝
 
