@@ -23,10 +23,10 @@ import { Result } from "./result";
  * ```
  */
 export class ResultAsync<T = void> {
+  private _isSuccess: boolean;
   private _value?: Promise<T>;
   private _errors: IError[] = [];
   private readonly _successes: ISuccess[] = [];
-  private _status: ResultStatus = "success";
   private _metadata?: IResultMetadata;
   private readonly _options: IResultOptions = {
     defaultValueWhenFailure: false,
@@ -41,6 +41,8 @@ export class ResultAsync<T = void> {
    * @param options - Configuration options for the Result
    */
   protected constructor(value?: T | Promise<T>, options?: IResultOptions) {
+    this._isSuccess = true;
+
     if (value instanceof Promise) {
       this._value = value;
     } else {
@@ -56,6 +58,14 @@ export class ResultAsync<T = void> {
         };
       }
     }
+  }
+
+  public get isSuccess(): boolean {
+    return this._isSuccess;
+  }
+
+  public get isFailure(): boolean {
+    return !this._isSuccess;
   }
 
   /**
@@ -136,7 +146,7 @@ export class ResultAsync<T = void> {
     metadata?: IResultMetadata
   ): Promise<ResultAsync<T>> {
     const result = new ResultAsync<T>(undefined, { metadata });
-    result._status = "failure";
+    result._isSuccess = false;
 
     if (Array.isArray(error)) {
       error.forEach((e) => result.addError(e));
@@ -161,10 +171,10 @@ export class ResultAsync<T = void> {
     let hasErrors = false;
 
     for (const result of results) {
-      if (result.isSuccess() && result._value !== undefined) {
+      if (result.isSuccess && result._value !== undefined) {
         valuePromises.push(result._value);
       }
-      if (result.isFailure()) {
+      if (result.isFailure) {
         hasErrors = true;
         result._errors.forEach((error) => mergedResult.addError(error));
       }
@@ -172,7 +182,7 @@ export class ResultAsync<T = void> {
     }
 
     if (hasErrors) {
-      mergedResult._status = "failure";
+      mergedResult._isSuccess = false;
       mergedResult._value = Promise.resolve([]);
     } else {
       mergedResult._value = Promise.all(valuePromises);
@@ -190,11 +200,11 @@ export class ResultAsync<T = void> {
    */
   static fromResult<T>(result: Result<T>): ResultAsync<T> {
     const asyncResult = new ResultAsync<T>(
-      result.isSuccess() ? result.getValue() : undefined
+      result.isSuccess ? result.value : undefined
     );
 
-    if (result.isFailure()) {
-      asyncResult._status = "failure";
+    if (result.isFailure) {
+      asyncResult._isSuccess = false;
       result.getErrors().forEach((error) => asyncResult.addError(error));
     }
 
@@ -233,32 +243,14 @@ export class ResultAsync<T = void> {
   }
 
   /**
-   * Checks if the Result is in a success state.
-   *
-   * @returns True if the Result is successful, false otherwise
-   */
-  public isSuccess(): boolean {
-    return this._status === "success";
-  }
-
-  /**
-   * Checks if the Result is in a failure state.
-   *
-   * @returns True if the Result is a failure, false otherwise
-   */
-  public isFailure(): boolean {
-    return !this.isSuccess();
-  }
-
-  /**
    * Gets the value contained in the Result.
    * Throws an error if the Result is in a failure state and defaultValueWhenFailure is false.
    *
    * @returns Promise resolving to the contained value
    * @throws Error if the Result is in a failurwe state
    */
-  public async getValue(): Promise<T> {
-    if (this.isFailure() && !this._options.defaultValueWhenFailure) {
+  public get value(): Promise<T> {
+    if (this.isFailure && !this._options.defaultValueWhenFailure) {
       throw new Error("Cannot get value from failed result");
     }
     return this._value as Promise<T>;
@@ -302,7 +294,7 @@ export class ResultAsync<T = void> {
    */
   public withError(error: string | IError): ResultAsync<T> {
     this.addError(typeof error === "string" ? { message: error } : error);
-    this._status = "failure";
+    (this as any)._isSuccess = false;
     return this;
   }
 
@@ -328,7 +320,7 @@ export class ResultAsync<T = void> {
    * @returns Promise of the Result instance for chaining
    */
   public async withValue(value: T | Promise<T>): Promise<ResultAsync<T>> {
-    if (this.isSuccess()) {
+    if (this.isSuccess) {
       this._value = value instanceof Promise ? value : Promise.resolve(value);
     }
     return this;
@@ -357,7 +349,7 @@ export class ResultAsync<T = void> {
    */
   public clearErrors(): ResultAsync<T> {
     this._errors = [];
-    this._status = "success";
+    (this as any)._isSuccess = true;
     return this;
   }
 
@@ -368,7 +360,7 @@ export class ResultAsync<T = void> {
    */
   public async log(): Promise<ResultAsync<T>> {
     console.group("AsyncResult Log");
-    console.log("Status:", this._status);
+    console.log("Status:", this.isSuccess ? "success" : "failure");
     console.log("Value:", await this._value);
     console.log("Errors:", this._errors);
     console.log("Successes:", this._successes);
@@ -412,7 +404,7 @@ export class ResultAsync<T = void> {
    */
   public async toResult(): Promise<Result<T>> {
     const value = await this._value;
-    const result = this.isSuccess()
+    const result = this.isSuccess
       ? Result.ok<T>(value)
       : Result.fail<T>(this.getErrors());
     if (this._metadata) {
@@ -431,7 +423,7 @@ export class ResultAsync<T = void> {
   public async onSuccess(
     callback: (value: T) => void | Promise<void>
   ): Promise<ResultAsync<T>> {
-    if (this.isSuccess() && this._value) {
+    if (this.isSuccess && this._value) {
       const value = await this._value;
       await callback(value as T);
     }
@@ -447,7 +439,7 @@ export class ResultAsync<T = void> {
   public async onFailure(
     callback: (errors: IError[]) => void | Promise<void>
   ): Promise<ResultAsync<T>> {
-    if (this.isFailure()) {
+    if (this.isFailure) {
       await callback(this.getErrors());
     }
     return this;
@@ -464,7 +456,7 @@ export class ResultAsync<T = void> {
   public async map<U>(
     func: (value: T) => Promise<U> | U
   ): Promise<ResultAsync<U>> {
-    if (this.isFailure()) {
+    if (this.isFailure) {
       return ResultAsync.failAsync(this.getErrors());
     }
     if (!this._value) {
@@ -486,7 +478,7 @@ export class ResultAsync<T = void> {
   public async bind<U>(
     func: (value: T) => Promise<ResultAsync<U>> | ResultAsync<U>
   ): Promise<ResultAsync<U>> {
-    if (this.isFailure()) {
+    if (this.isFailure) {
       return ResultAsync.failAsync(this.getErrors());
     }
     if (!this._value) {
@@ -506,7 +498,7 @@ export class ResultAsync<T = void> {
   public async tap(
     action: (value: T) => void | Promise<void>
   ): Promise<ResultAsync<T>> {
-    if (this.isSuccess() && this._value) {
+    if (this.isSuccess && this._value) {
       const value = await this._value;
       await action(value as T);
     }

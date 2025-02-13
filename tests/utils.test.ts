@@ -30,8 +30,8 @@ describe("Utils", () => {
         };
 
         const result = await tryAsync(operation);
-        expect(result.isSuccess()).toBe(true);
-        expect(result.getValue()).toBe("success");
+        expect(result.isSuccess).toBe(true);
+        expect(result.value).toBe("success");
         expect(attempts).toBe(3);
       });
 
@@ -43,7 +43,7 @@ describe("Utils", () => {
         };
 
         const result = await tryAsync(operation, 1);
-        expect(result.isFailure()).toBe(true);
+        expect(result.isFailure).toBe(true);
         expect(result.getErrors()[0].message).toBe("Persistent failure");
         expect(attempts).toBe(1);
       });
@@ -57,8 +57,8 @@ describe("Utils", () => {
         };
 
         const result = await tryAsync(operation);
-        expect(result.isSuccess()).toBe(true);
-        expect(result.getValue()).toBe("success");
+        expect(result.isSuccess).toBe(true);
+        expect(result.value).toBe("success");
       });
 
       it("should reject if operation exceeds timeout", async () => {
@@ -68,7 +68,7 @@ describe("Utils", () => {
         };
 
         const result = await tryAsync(operation, 1, 0, 100);
-        expect(result.isFailure()).toBe(true);
+        expect(result.isFailure).toBe(true);
         expect(result.getErrors()[0].message).toBe("Operation timed out");
       });
     });
@@ -81,15 +81,15 @@ describe("Utils", () => {
         const mapped1 = await asyncResult.map((x: number) => x * 2);
         const mapped2 = await mapped1.map((x: number) => x + 1);
 
-        expect(mapped2.isSuccess()).toBe(true);
-        expect(await mapped2.getValue()).toBe(5);
+        expect(mapped2.isSuccess).toBe(true);
+        expect(await mapped2.value).toBe(5);
       });
 
       it("should not transform failed result", async () => {
         const asyncResult = await fromResult<number>(fail("Error"));
         const mapped = await asyncResult.map((x: number) => x * 2);
 
-        expect(mapped.isFailure()).toBe(true);
+        expect(mapped.isFailure).toBe(true);
       });
     });
 
@@ -102,8 +102,8 @@ describe("Utils", () => {
         });
         const mapped = await tapped.map((x: number) => x * 2);
 
-        expect(mapped.isSuccess()).toBe(true);
-        expect(await mapped.getValue()).toBe(4);
+        expect(mapped.isSuccess).toBe(true);
+        expect(await mapped.value).toBe(4);
         expect(sideEffect).toBe(2);
       });
 
@@ -114,7 +114,7 @@ describe("Utils", () => {
           sideEffect = true;
         });
 
-        expect(tapped.isFailure()).toBe(true);
+        expect(tapped.isFailure).toBe(true);
         expect(sideEffect).toBe(false);
       });
     });
@@ -124,8 +124,8 @@ describe("Utils", () => {
         const results = [await okAsync(2), await okAsync(3), await okAsync(4)];
 
         const combined = await combineAsync(results);
-        expect(combined.isSuccess()).toBe(true);
-        expect(await combined.getValue()).toEqual([2, 3, 4]);
+        expect(combined.isSuccess).toBe(true);
+        expect(await combined.value).toEqual([2, 3, 4]);
       });
 
       it("should collect all errors when combining results", async () => {
@@ -136,7 +136,7 @@ describe("Utils", () => {
         ];
 
         const combined = await combineAsync(results);
-        expect(combined.isFailure()).toBe(true);
+        expect(combined.isFailure).toBe(true);
         expect(combined.getErrors()).toHaveLength(2);
       });
     });

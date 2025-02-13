@@ -25,6 +25,7 @@ import type {
  * ```
  */
 export class Result<T = void> {
+  private _isSuccess: boolean;
   private _value?: T;
   private _errors: IError[] = [];
   private _successes: ISuccess[] = [];
@@ -44,6 +45,8 @@ export class Result<T = void> {
    */
   protected constructor(value?: T, options?: IResultOptions) {
     this._value = value;
+    this._isSuccess = true;
+
     if (options) {
       this._options = { ...this._options, ...options };
       if (options.metadata) {
@@ -152,10 +155,10 @@ export class Result<T = void> {
     let hasErrors = false;
 
     results.forEach((result) => {
-      if (result.isSuccess() && result._value !== undefined) {
+      if (result.isSuccess && result._value !== undefined) {
         values.push(result._value);
       }
-      if (result.isFailure()) {
+      if (result.isFailure) {
         hasErrors = true;
         result._errors.forEach((error) => mergedResult.addError(error));
       }
@@ -172,32 +175,14 @@ export class Result<T = void> {
   }
 
   /**
-   * Checks if the Result is in a success state.
-   *
-   * @returns True if the Result is successful, false otherwise
-   */
-  public isSuccess(): boolean {
-    return this._status === "success";
-  }
-
-  /**
-   * Checks if the Result is in a failure state.
-   *
-   * @returns True if the Result is a failure, false otherwise
-   */
-  public isFailure(): boolean {
-    return !this.isSuccess();
-  }
-
-  /**
    * Gets the value contained in the Result.
    * Throws an error if the Result is in a failure state and defaultValueWhenFailure is false.
    *
    * @returns The contained value
    * @throws Error if the Result is in a failure state
    */
-  public getValue(): T {
-    if (this.isFailure() && !this._options.defaultValueWhenFailure) {
+  public get value(): T {
+    if (this.isFailure && !this._options.defaultValueWhenFailure) {
       throw new Error("Cannot get value from failed result");
     }
     return this._value as T;
@@ -240,7 +225,7 @@ export class Result<T = void> {
    */
   public withError(error: string | IError): Result<T> {
     this.addError(typeof error === "string" ? { message: error } : error);
-    this._status = "failure";
+    this._isSuccess = false;
     return this;
   }
 
@@ -266,7 +251,7 @@ export class Result<T = void> {
    * @returns The Result instance for chaining
    */
   public withValue(value: T): Result<T> {
-    if (this.isSuccess()) {
+    if (this.isSuccess) {
       this._value = value;
     }
     return this;
@@ -296,6 +281,7 @@ export class Result<T = void> {
   public clearErrors(): Result<T> {
     this._errors = [];
     this._status = "success";
+    this._isSuccess = true;
     return this;
   }
 
@@ -321,7 +307,7 @@ export class Result<T = void> {
    * @returns A Promise that resolves with the value or rejects with the first error
    */
   public toPromise(): Promise<T> {
-    if (this.isFailure() && !this._options.defaultValueWhenFailure) {
+    if (this.isFailure && !this._options.defaultValueWhenFailure) {
       return Promise.reject(this._errors[0]);
     }
     return Promise.resolve(this._value as T);
@@ -364,5 +350,13 @@ export class Result<T = void> {
       timestamp: metadata.timestamp || new Date(),
     };
     return this;
+  }
+
+  public get isSuccess(): boolean {
+    return this._isSuccess;
+  }
+
+  public get isFailure(): boolean {
+    return !this._isSuccess;
   }
 }

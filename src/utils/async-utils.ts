@@ -85,8 +85,8 @@ export class AsyncUtils {
     const values: T[] = [];
 
     results.forEach((result: Result<T>) => {
-      if (result.isSuccess()) {
-        values.push(result.getValue());
+      if (result.isSuccess) {
+        values.push(result.value);
       } else {
         errors.push(...result.getErrors());
       }

@@ -44,12 +44,12 @@ const success = Result.ok("Hello, World!");
 // Creating a failure result
 const failure = Result.fail("Something went wrong");
 
-// Checking result state
-if (success.isSuccess()) {
-  console.log(success.getValue()); // "Hello, World!"
+// Checking result state using properties
+if (success.isSuccess) {
+  console.log(success.value); // "Hello, World!"
 }
 
-if (failure.isFailure()) {
+if (failure.isFailure) {
   console.log(failure.getErrors()[0].message); // "Something went wrong"
 }
 ```
@@ -62,9 +62,9 @@ const result = Result.ok(5)
   .withSuccess("Value updated")
   .withMetadata({ timestamp: new Date() });
 
-// Access the final value
-if (result.isSuccess()) {
-  console.log(result.getValue()); // 10
+// Access the final value using property
+if (result.isSuccess) {
+  console.log(result.value); // 10
   console.log(result.getSuccesses()); // [{message: "Value updated", timestamp: Date}]
 }
 ```
@@ -78,9 +78,9 @@ const asyncResult = await ResultAsync.from(
   fetch("https://api.example.com/data").then((r) => r.json())
 );
 
-// Handle the result
-if (asyncResult.isSuccess()) {
-  const data = await asyncResult.getValue();
+// Handle the result using properties
+if (asyncResult.isSuccess) {
+  const data = await asyncResult.value;
   // Process data
 } else {
   console.error(asyncResult.getErrors());
@@ -101,8 +101,8 @@ const result = await AsyncUtils.tryAsync(
   1000 // delay between retries in ms
 );
 
-// Handle errors gracefully
-if (result.isFailure()) {
+// Handle errors gracefully using properties
+if (result.isFailure) {
   console.error(result.getErrors()); // Array of errors with timestamps
 }
 ```
@@ -113,6 +113,12 @@ if (result.isFailure()) {
 
 The main Result type that wraps a success value of type T.
 
+#### Properties
+
+- `isSuccess: boolean` - Whether the result is successful
+- `isFailure: boolean` - Whether the result is a failure
+- `value: T` - Gets the success value (throws if accessing on failure)
+
 #### Static Methods
 
 - `ok<T>(value: T): Result<T>` - Creates a success result
@@ -121,9 +127,6 @@ The main Result type that wraps a success value of type T.
 
 #### Instance Methods
 
-- `isSuccess(): boolean` - Checks if result is successful
-- `isFailure(): boolean` - Checks if result is a failure
-- `getValue(): T` - Gets the success value
 - `getErrors(): IError[]` - Gets the array of errors
 - `withError(error: string | IError): Result<T>` - Adds an error
 - `withSuccess(success: string | ISuccess): Result<T>` - Adds a success message
@@ -133,6 +136,12 @@ The main Result type that wraps a success value of type T.
 ### ResultAsync<T>
 
 Asynchronous version of Result with Promise support.
+
+#### Properties
+
+- `isSuccess: boolean` - Whether the result is successful
+- `isFailure: boolean` - Whether the result is a failure
+- `value: Promise<T>` - Gets the success value (throws if accessing on failure)
 
 #### Static Methods
 
