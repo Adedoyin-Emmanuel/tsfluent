@@ -2,16 +2,14 @@
   "name": "tsfluent",
   "description": "Fluent Result Type for TypeScript",
   "module": "./dist/src/index.js",
-  "type": "module",
-  "version": "1.4.0",
+  "version": "1.3.0",
   "main": "./dist/src/index.js",
-  "types": "./dist/src/index.d.ts",
   "files": [
     "dist/**/*"
   ],
   "author": "Adedoyin Emmanuel Adeniyi",
   "license": "MIT",
-  "repository": {
+ "repository": {
     "type": "git",
     "url": "git+https://github.com/Adedoyin-Emmanuel/tsfluent.git"
   },
