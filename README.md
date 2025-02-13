@@ -94,6 +94,7 @@ const result = Result.ok(5)
 if (result.isSuccess) {
   console.log(result.value); // 10
   console.log(result.getSuccesses()); // [{message: "Value updated", timestamp: Date}]
+  console.log(result.metadata); // {timestamp: 2025-02-13T10:34:13.928Z, context: { source: "user-input", },}
 }
 ```
 
@@ -102,26 +103,72 @@ if (result.isSuccess) {
 ```typescript
 import { ResultAsync } from "tsfluent";
 
-interface ApiContext {
+interface IUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: {
+      lat: string;
+      lng: string;
+    };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
+}
+
+interface IApiContext {
   requestId: string;
   endpoint: string;
 }
 
-const asyncResult = await ResultAsync.from<Response, ApiContext>(
-  fetch("https://api.example.com/data")
-).withMetadata({
+// Create an async result from a Promise
+const asyncResult = await ResultAsync.from<IUser[]>(
+  fetch("https://jsonplaceholder.typicode.com/users").then((res) => res.json())
+);
+
+asyncResult.withMetadata({
   context: {
-    requestId: "req-123",
-    endpoint: "/data",
+    requestId: "uniquerequestid",
+    endpoint: "/users",
   },
 });
 
 // Handle the result using properties
 if (asyncResult.isSuccess) {
   const data = await asyncResult.value;
-  console.log(asyncResult.metadata?.context); // Type-safe access to ApiContext
+  console.log("Response:", data);
 } else {
   console.error(asyncResult.errors);
+}
+
+// Alternative: Use okAsync directly with context
+const resultWithContext = await ResultAsync.okAsync<IUser[], IApiContext>(
+  fetch("https://jsonplaceholder.typicode.com/users").then((res) => res.json()),
+  {
+    metadata: {
+      context: {
+        requestId: "youruniqueRequestId",
+        endpoint: "/users",
+      },
+    },
+  }
+);
+
+if (resultWithContext.isSuccess) {
+  const users = await resultWithContext.value;
+
+  console.log(users.map((user) => user.name));
 }
 ```
 
@@ -130,25 +177,101 @@ if (asyncResult.isSuccess) {
 ```typescript
 import { AsyncUtils } from "tsfluent";
 
-interface RetryContext {
-  attempts: number;
-  lastAttempt: Date;
-}
-
-const result = await AsyncUtils.tryAsync<string, RetryContext>(
+// Using tryAsync with retry configuration
+const result = await AsyncUtils.tryAsync<string>(
   async () => {
     // Some async operation that might fail
     throw new Error("Oops!");
   },
-  3, // max attempts
-  1000 // delay between retries in ms
+  3, // maxAttempts
+  1000, // delayMs
+  2000 // timeoutMs (optional)
 );
 
-// Handle errors gracefully using properties
+// Handle errors with retry information
 if (result.isFailure) {
   console.error(result.errors); // Array of errors with timestamps
-  console.log(result.metadata?.context); // Access retry context
+  const context = result.errors[0].context; // Access retry context
+  if (context) {
+    console.log(
+      `Failed after ${context.attempts} of ${context.maxAttempts} attempts`
+    );
+    console.log(`Delay between attempts: ${context.delayMs}ms`);
+    if (context.timeoutMs) {
+      console.log(`Operation timed out after ${context.timeoutMs}ms`);
+    }
+  }
 }
+```
+
+### ResultAsync Operations
+
+```typescript
+import { ResultAsync } from "tsfluent";
+
+interface ApiContext {
+  requestId: string;
+  endpoint: string;
+  timestamp: Date;
+}
+
+// Create a successful async result with context
+const result = await ResultAsync.okAsync<Response, ApiContext>(
+  fetch("https://api.example.com/data"),
+  {
+    metadata: {
+      context: {
+        requestId: "req-123",
+        endpoint: "/data",
+        timestamp: new Date(),
+      },
+    },
+  }
+);
+
+// Chain operations with type safety
+const processedResult = await result
+  .map((response) => response.json()) // Transform the value
+  .onSuccess(async (data) => {
+    console.log("Data processed:", data);
+    console.log("Request ID:", result.metadata?.context?.requestId);
+  })
+  .onFailure((errors) => {
+    console.error("Failed:", errors);
+    // Context is preserved in errors
+    console.log("Failed endpoint:", errors[0].context?.endpoint);
+  });
+
+// Convert to synchronous Result
+const syncResult = await result.toResult();
+```
+
+### Combining Results
+
+```typescript
+import { ResultAsync, AsyncUtils } from "tsfluent";
+
+// Combine multiple async results
+const results = [
+  ResultAsync.okAsync(fetchUser(1)),
+  ResultAsync.okAsync(fetchUser(2)),
+  ResultAsync.okAsync(fetchUser(3)),
+];
+
+const combined = await AsyncUtils.combine(results);
+
+if (combined.isSuccess) {
+  const users = await combined.value; // Array of users
+  console.log("All users fetched:", users);
+} else {
+  console.error("Some fetches failed:", combined.errors);
+}
+
+// Using merge for sync results
+const syncResults = [Result.ok(1), Result.ok(2), Result.ok(3)];
+
+const merged = Result.merge(syncResults);
+console.log(merged.value); // [1, 2, 3]
 ```
 
 ## API Reference 📚
@@ -167,7 +290,7 @@ The main Result type that wraps a success value of type T with an optional conte
 
 #### Static Methods
 
-- `ok<T, TContext>(value: T, metadata?: IResultMetadata<TContext>): Result<T, TContext>` - Creates a success result
+- `ok<T, TContext>(value: T, options?: IResultOptions<TContext>): Result<T, TContext>` - Creates a success result
 - `fail<T, TContext>(error: string | IError | IError[]): Result<T, TContext>` - Creates a failure result
 - `merge<T, TContext>(results: Result<T, TContext>[]): Result<T[], TContext>` - Merges multiple results
 
@@ -177,6 +300,8 @@ The main Result type that wraps a success value of type T with an optional conte
 - `withSuccess(success: string | ISuccess): Result<T, TContext>` - Adds a success message
 - `withValue(value: T): Result<T, TContext>` - Sets the value
 - `withMetadata(metadata: IResultMetadata<TContext>): Result<T, TContext>` - Adds metadata
+- `withContext(context: Record<string, unknown>): Result<T, TContext>` - Adds context to the last error
+- `toPromise(): Promise<T>` - Converts to a Promise
 
 ### ResultAsync<T, TContext>
 
@@ -187,14 +312,42 @@ Asynchronous version of Result with Promise support and context type.
 - `isSuccess: boolean` - Whether the result is successful
 - `isFailure: boolean` - Whether the result is a failure
 - `value: Promise<T>` - Gets the success value (throws if accessing on failure)
+- `errors: IError[]` - Gets the array of errors
 - `metadata?: IResultMetadata<TContext>` - Gets the metadata with typed context
 
 #### Static Methods
 
-- `okAsync<T, TContext>(value: T | Promise<T>, metadata?: IResultMetadata<TContext>): Promise<ResultAsync<T, TContext>>` - Creates a success result
+- `okAsync<T, TContext>(value: T | Promise<T>, options?: IResultOptions<TContext>): Promise<ResultAsync<T, TContext>>` - Creates a success result
 - `failAsync<T, TContext>(error: string | IError | IError[]): Promise<ResultAsync<T, TContext>>` - Creates a failure result
-- `from<T>(promise: Promise<T>): Promise<ResultAsync<T>>` - Creates from a Promise
+- `from<T>(promise: Promise<Result<T> | T>): Promise<ResultAsync<T>>` - Creates from a Promise
 - `fromResult<T, TContext>(result: Result<T, TContext>): ResultAsync<T, TContext>` - Creates from a Result
+- `merge<T, TContext>(results: ResultAsync<T, TContext>[]): Promise<ResultAsync<T[], TContext>>` - Merges multiple results
+
+#### Instance Methods
+
+- `withError(error: string | IError): ResultAsync<T, TContext>` - Adds an error
+- `withSuccess(success: string | ISuccess): ResultAsync<T, TContext>` - Adds a success message
+- `withValue(value: T | Promise<T>): Promise<ResultAsync<T, TContext>>` - Sets the value
+- `withMetadata(metadata: IResultMetadata<TContext>): ResultAsync<T, TContext>` - Adds metadata
+- `withContext(context: Record<string, unknown>): ResultAsync<T, TContext>` - Adds context to the last error
+- `toResult(): Promise<Result<T, TContext>>` - Converts to a synchronous Result
+- `map<U>(func: (value: T) => Promise<U> | U): Promise<ResultAsync<U, TContext>>` - Maps the value
+- `bind<U>(func: (value: T) => Promise<ResultAsync<U, TContext>>): Promise<ResultAsync<U, TContext>>` - Chains results
+- `tap(action: (value: T) => void | Promise<void>): Promise<ResultAsync<T, TContext>>` - Executes side effects
+- `onSuccess(callback: (value: T) => void | Promise<void>): Promise<ResultAsync<T, TContext>>` - Success callback
+- `onFailure(callback: (errors: IError[]) => void | Promise<void>): Promise<ResultAsync<T, TContext>>` - Failure callback
+
+### AsyncUtils
+
+Utility class for working with asynchronous operations.
+
+#### Static Methods
+
+- `try<T>(action: () => Promise<T>, options?: IResultOptions): Promise<Result<T>>` - Wraps an async operation
+- `tryAsync<T>(action: () => Promise<T>, maxAttempts?: number, delayMs?: number, timeoutMs?: number): Promise<Result<T>>` - Retries an async operation with timeout
+- `combine<T>(asyncResults: ResultAsync<T>[], options?: IResultOptions): Promise<ResultAsync<T[]>>` - Combines multiple results
+- `timeout<T>(action: () => Promise<T>, timeoutMs: number): Promise<Result<T>>` - Executes with timeout
+- `retry<T>(action: () => Promise<T>, retries?: number, delay?: number): Promise<Result<T>>` - Retries with delay
 
 ## Contributing 🤝
 
