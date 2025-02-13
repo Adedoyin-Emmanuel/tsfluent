@@ -7,7 +7,7 @@ describe("Types", () => {
     it("should create error with message", () => {
       const error: IError = { message: "Something went wrong" };
       const result = fail(error);
-      expect(result.getErrors()[0].message).toBe("Something went wrong");
+      expect(result.errors[0].message).toBe("Something went wrong");
     });
 
     it("should create error with optional properties", () => {
@@ -17,7 +17,7 @@ describe("Types", () => {
         context: { field: "email" },
       };
       const result = fail(error);
-      const resultError = result.getErrors()[0];
+      const resultError = result.errors[0];
       expect(resultError.message).toBe("Validation failed");
       expect(resultError.reasonCode).toBe("INVALID_INPUT");
       expect(resultError.context).toEqual({ field: "email" });
@@ -76,26 +76,26 @@ describe("Types", () => {
   describe("Type Guards", () => {
     it("should correctly identify successful Result", () => {
       const result = ok(42);
-      expect(result.isSuccess()).toBe(true);
-      expect(result.isFailure()).toBe(false);
+      expect(result.isSuccess).toBe(true);
+      expect(result.isFailure).toBe(false);
     });
 
     it("should correctly identify failed Result", () => {
       const result = fail("Error");
-      expect(result.isSuccess()).toBe(false);
-      expect(result.isFailure()).toBe(true);
+      expect(result.isSuccess).toBe(false);
+      expect(result.isFailure).toBe(true);
     });
 
     it("should correctly identify successful ResultAsync", async () => {
       const result = await okAsync(42);
-      expect(result.isSuccess()).toBe(true);
-      expect(result.isFailure()).toBe(false);
+      expect(result.isSuccess).toBe(true);
+      expect(result.isFailure).toBe(false);
     });
 
     it("should correctly identify failed ResultAsync", async () => {
       const result = await failAsync("Error");
-      expect(result.isSuccess()).toBe(false);
-      expect(result.isFailure()).toBe(true);
+      expect(result.isSuccess).toBe(false);
+      expect(result.isFailure).toBe(true);
     });
   });
 
@@ -105,9 +105,9 @@ describe("Types", () => {
       const stringResult = ok("hello");
       const objectResult = ok({ id: 1 });
 
-      expect(numberResult.getValue()).toBe(42);
-      expect(stringResult.getValue()).toBe("hello");
-      expect(objectResult.getValue()).toEqual({ id: 1 });
+      expect(numberResult.value).toBe(42);
+      expect(stringResult.value).toBe("hello");
+      expect(objectResult.value).toEqual({ id: 1 });
     });
 
     it("should preserve value type in ResultAsync", async () => {
@@ -115,9 +115,9 @@ describe("Types", () => {
       const stringResult = await okAsync("hello");
       const objectResult = await okAsync({ id: 1 });
 
-      expect(await numberResult.getValue()).toBe(42);
-      expect(await stringResult.getValue()).toBe("hello");
-      expect(await objectResult.getValue()).toEqual({ id: 1 });
+      expect(await numberResult.value).toBe(42);
+      expect(await stringResult.value).toBe("hello");
+      expect(await objectResult.value).toEqual({ id: 1 });
     });
 
     it("should handle complex generic types", async () => {
@@ -129,8 +129,8 @@ describe("Types", () => {
       const userResult = ok<User>({ id: 1, name: "John" });
       const asyncUserResult = await okAsync<User>({ id: 1, name: "John" });
 
-      expect(userResult.getValue()).toEqual({ id: 1, name: "John" });
-      expect(await asyncUserResult.getValue()).toEqual({ id: 1, name: "John" });
+      expect(userResult.value).toEqual({ id: 1, name: "John" });
+      expect(await asyncUserResult.value).toEqual({ id: 1, name: "John" });
     });
   });
 });

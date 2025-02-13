@@ -261,10 +261,19 @@ export class ResultAsync<T = void> {
    *
    * @returns Array of error objects
    */
-  public getErrors(): IError[] {
+  public get errors(): IError[] {
     return this._options.preserveErrorsOrder
       ? [...this._errors]
       : [...this._errors].reverse();
+  }
+
+  /**
+   * Gets the array of errors associated with the Result.
+   * @deprecated Use the errors property instead
+   * @returns Array of error objects
+   */
+  public getErrors(): IError[] {
+    return this.errors;
   }
 
   /**
@@ -294,7 +303,7 @@ export class ResultAsync<T = void> {
    */
   public withError(error: string | IError): ResultAsync<T> {
     this.addError(typeof error === "string" ? { message: error } : error);
-    (this as any)._isSuccess = false;
+    this._isSuccess = false;
     return this;
   }
 
@@ -349,7 +358,7 @@ export class ResultAsync<T = void> {
    */
   public clearErrors(): ResultAsync<T> {
     this._errors = [];
-    (this as any)._isSuccess = true;
+    this._isSuccess = true;
     return this;
   }
 

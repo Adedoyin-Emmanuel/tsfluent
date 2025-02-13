@@ -42,24 +42,25 @@ describe("Result", () => {
       expect(result.isSuccess).toBe(false);
       expect(result.isFailure).toBe(true);
       expect(() => result.value).toThrow();
-      expect(result.getErrors()[0].message).toBe("error");
+      expect(result.errors[0].message).toBe("error");
     });
 
     it("should create a failed result with an error object", () => {
       const error = { message: "Error", reasonCode: "ERR_001" };
       const result = fail(error);
       expect(result.isFailure).toBe(true);
-      expect(result.getErrors()[0]).toMatchObject(error);
+      expect(result.errors[0]).toMatchObject(error);
     });
 
     it("should create a failed result with multiple errors", () => {
       const errors = [{ message: "Error 1" }, { message: "Error 2" }];
       const result = fail(errors);
       expect(result.isFailure).toBe(true);
-      expect(result.getErrors()).toHaveLength(2);
-      expect(
-        result.getErrors().map((e: { message: string }) => e.message)
-      ).toEqual(["Error 1", "Error 2"]);
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors.map((e: { message: string }) => e.message)).toEqual([
+        "Error 1",
+        "Error 2",
+      ]);
     });
   });
 
@@ -68,7 +69,7 @@ describe("Result", () => {
       it("should add error and change status to failure", () => {
         const result = ok(42).withError("Something went wrong");
         expect(result.isFailure).toBe(true);
-        expect(result.getErrors()[0].message).toBe("Something went wrong");
+        expect(result.errors[0].message).toBe("Something went wrong");
       });
 
       it("should add success message without changing status", () => {
@@ -94,7 +95,7 @@ describe("Result", () => {
     describe("withContext", () => {
       it("should add context to the last error", () => {
         const result = fail("Error").withContext({ details: "More info" });
-        expect(result.getErrors()[0].context).toEqual({ details: "More info" });
+        expect(result.errors[0].context).toEqual({ details: "More info" });
       });
     });
 
@@ -109,7 +110,7 @@ describe("Result", () => {
       it("should clear errors and reset status to success", () => {
         const result = fail("Error").clearErrors();
         expect(result.isSuccess).toBe(true);
-        expect(result.getErrors()).toHaveLength(0);
+        expect(result.errors).toHaveLength(0);
       });
     });
 
@@ -139,7 +140,7 @@ describe("Result", () => {
       const results = [ok(1), fail("Error 1"), fail("Error 2")];
       const merged = merge(results);
       expect(merged.isFailure).toBe(true);
-      expect(merged.getErrors()).toHaveLength(2);
+      expect(merged.errors).toHaveLength(2);
     });
   });
 });
@@ -166,14 +167,14 @@ describe("ResultAsync", () => {
       it("should create a failed async result with an error message", async () => {
         const result = await failAsync("Something went wrong");
         expect(result.isFailure).toBe(true);
-        expect(result.getErrors()[0].message).toBe("Something went wrong");
+        expect(result.errors[0].message).toBe("Something went wrong");
       });
 
       it("should create a failed async result with multiple errors", async () => {
         const errors = [{ message: "Error 1" }, { message: "Error 2" }];
         const result = await failAsync(errors);
         expect(result.isFailure).toBe(true);
-        expect(result.getErrors()).toHaveLength(2);
+        expect(result.errors).toHaveLength(2);
       });
     });
   });
@@ -192,7 +193,7 @@ describe("ResultAsync", () => {
         const syncResult = fail("Error");
         const asyncResult = fromResult(syncResult);
         expect(asyncResult.isFailure).toBe(true);
-        expect(asyncResult.getErrors()[0].message).toBe("Error");
+        expect(asyncResult.errors[0].message).toBe("Error");
       });
     });
 
@@ -224,7 +225,7 @@ describe("ResultAsync", () => {
       ]);
       const merged = await mergeAsync(results);
       expect(merged.isFailure).toBe(true);
-      expect(merged.getErrors()).toHaveLength(2);
+      expect(merged.errors).toHaveLength(2);
     });
   });
 });
@@ -242,7 +243,7 @@ describe("AsyncUtils", () => {
         throw new Error("Async error");
       });
       expect(result.isFailure).toBe(true);
-      expect(result.getErrors()[0].message).toBe("Async error");
+      expect(result.errors[0].message).toBe("Async error");
     });
   });
 
@@ -263,7 +264,7 @@ describe("AsyncUtils", () => {
       ]);
       const combined = await combineAsync(results);
       expect(combined.isFailure).toBe(true);
-      expect(combined.getErrors()).toHaveLength(2);
+      expect(combined.errors).toHaveLength(2);
     });
   });
 });

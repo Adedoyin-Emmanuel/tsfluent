@@ -1,7 +1,6 @@
 import type {
   IError,
   ISuccess,
-  ResultStatus,
   IResultOptions,
   IResultMetadata,
 } from "./@types/result";
@@ -29,7 +28,6 @@ export class Result<T = void> {
   private _value?: T;
   private _errors: IError[] = [];
   private _successes: ISuccess[] = [];
-  private _status: ResultStatus = "success";
   private _metadata?: IResultMetadata;
   private _options: IResultOptions = {
     defaultValueWhenFailure: false,
@@ -130,7 +128,7 @@ export class Result<T = void> {
     metadata?: IResultMetadata
   ): Result<T> {
     const result = new Result<T>(undefined, { metadata });
-    result._status = "failure";
+    result._isSuccess = false;
 
     if (Array.isArray(error)) {
       error.forEach((e) => result.addError(e));
@@ -166,7 +164,7 @@ export class Result<T = void> {
     });
 
     if (hasErrors) {
-      mergedResult._status = "failure";
+      mergedResult._isSuccess = false;
     } else {
       mergedResult._value = values;
     }
@@ -193,10 +191,19 @@ export class Result<T = void> {
    *
    * @returns Array of error objects
    */
-  public getErrors(): IError[] {
+  public get errors(): IError[] {
     return this._options.preserveErrorsOrder
       ? [...this._errors]
       : [...this._errors].reverse();
+  }
+
+  /**
+   * Gets the array of errors associated with the Result.
+   * @deprecated Use the errors property instead
+   * @returns Array of error objects
+   */
+  public getErrors(): IError[] {
+    return this.errors;
   }
 
   /**
@@ -280,7 +287,6 @@ export class Result<T = void> {
    */
   public clearErrors(): Result<T> {
     this._errors = [];
-    this._status = "success";
     this._isSuccess = true;
     return this;
   }
@@ -292,7 +298,7 @@ export class Result<T = void> {
    */
   public log(): Result<T> {
     console.group("Result Log");
-    console.log("Status:", this._status);
+    console.log("Status:", this.isSuccess ? "success" : "failure");
     console.log("Value:", this._value);
     console.log("Errors:", this._errors);
     console.log("Successes:", this._successes);
