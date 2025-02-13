@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/Adedoyin-Emmanuel/tsfluent/compare/v1.3.0...v1.5.0) (2025-02-13)
+
+
+### Bug Fixes
+
+* fix package configuration ([7570d2f](https://github.com/Adedoyin-Emmanuel/tsfluent/commit/7570d2f4a03443457247c093f7f68e9aea89d8ea))
+
+## [1.4.0](https://github.com/Adedoyin-Emmanuel/tsfluent/compare/v1.3.0...v1.4.0) (2025-02-13)
+
+
+### Bug Fixes
+
+* fix package configuration ([7570d2f](https://github.com/Adedoyin-Emmanuel/tsfluent/commit/7570d2f4a03443457247c093f7f68e9aea89d8ea))
+
 ## [1.4.0](https://github.com/Adedoyin-Emmanuel/tsfluent/compare/v1.3.0...v1.4.0) (2025-02-13)
 
 ## [1.3.0](https://github.com/Adedoyin-Emmanuel/tsfluent/compare/v1.2.0...v1.3.0) (2025-02-13)
