@@ -4,12 +4,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## [1.2.0](https://github.com/Adedoyin-Emmanuel/tsfluent/compare/v1.1.0...v1.2.0) (2025-02-13)
 
-
 ### Features
 
-* Add generic context type support and rich metadata handling ([ed146df](https://github.com/Adedoyin-Emmanuel/tsfluent/commit/ed146dfb120520d3ec71fbe40599f1b71e5df0c4))
-
-## [1.2.0] - 2025-02-13
+- Add generic context type support and rich metadata handling ([ed146df](https://github.com/Adedoyin-Emmanuel/tsfluent/commit/ed146dfb120520d3ec71fbe40599f1b71e5df0c4))
 
 ### Added
 
