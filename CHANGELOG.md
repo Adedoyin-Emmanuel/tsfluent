@@ -2,6 +2,56 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/Adedoyin-Emmanuel/tsfluent/compare/v1.1.0...v1.2.0) (2025-02-13)
+
+
+### Features
+
+* Add generic context type support and rich metadata handling ([ed146df](https://github.com/Adedoyin-Emmanuel/tsfluent/commit/ed146dfb120520d3ec71fbe40599f1b71e5df0c4))
+
+## [1.2.0] - 2025-02-13
+
+### Added
+
+- 🌟 Generic context type support (`TContext`) for both `Result` and `ResultAsync`
+- 🔍 Enhanced metadata handling with type-safe context access
+- ✨ Property-based access for errors and metadata (replacing method-based access)
+- 🔄 Improved type safety in chaining operations
+
+### Changed
+
+- ⚡ Deprecated `getErrors()` in favor of `errors` property
+- 🛠️ Deprecated `getMetadata()` in favor of `metadata` property
+- 🔒 Strengthened type safety across all operations
+- 📝 Updated documentation with comprehensive examples
+
+### Fixed
+
+- 🐛 Type compatibility issues between `Result` and `ResultAsync`
+- 🔧 Metadata propagation in transformation methods
+- ✨ Context type preservation in chaining operations
+
+### Example Usage
+
+```typescript
+interface UserContext {
+  userId: string;
+  timestamp: Date;
+  environment: "dev" | "prod";
+}
+
+const result = Result.ok<number, UserContext>(42).withMetadata({
+  context: {
+    userId: "123",
+    timestamp: new Date(),
+    environment: "prod",
+  },
+});
+
+// Type-safe access to context
+const context = result.metadata?.context; // Type is UserContext | undefined
+```
+
 ## [1.1.0](https://github.com/Adedoyin-Emmanuel/tsfluent/compare/v1.0.7...v1.1.0) (2025-02-13)
 
 ### [1.0.7](https://github.com/Adedoyin-Emmanuel/tsfluent/compare/v1.0.6...v1.0.7) (2025-02-13)
@@ -20,7 +70,6 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## 1.0.0 (2025-02-12)
 
-
 ### Bug Fixes
 
-* fix failing tests ([10cf8cc](https://github.com/clipsave/tsresult/commit/10cf8ccade360648b8f6a23a5db2d70c215c43a4))
+- fix failing tests ([10cf8cc](https://github.com/clipsave/tsresult/commit/10cf8ccade360648b8f6a23a5db2d70c215c43a4))
