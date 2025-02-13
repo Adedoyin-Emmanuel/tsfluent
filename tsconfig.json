@@ -1,22 +1,12 @@
 {
   "compilerOptions": {
-    // Enable latest features
-    "lib": ["ESNext", "DOM"],
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleDetection": "force",
-    "jsx": "react-jsx",
-    "allowJs": true,
-
-    // Bundler mode
-    "moduleResolution": "bundler",
-    "verbatimModuleSyntax": true,
-
-    // Build configuration
-    "outDir": "./dist",
+    "target": "ES6",
+    "module": "CommonJS",
     "declaration": true,
-    "emitDeclarationOnly": false,
-    "noEmit": false,
+    "esModuleInterop": true,
+
+    "outDir": "./dist",
+    "rootDir": "./src",
 
     // Best practices
     "strict": true,
