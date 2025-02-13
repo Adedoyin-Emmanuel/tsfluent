@@ -1,7 +1,6 @@
 import type {
   IError,
   ISuccess,
-  ResultStatus,
   IResultOptions,
   IResultMetadata,
 } from "./@types/result";
