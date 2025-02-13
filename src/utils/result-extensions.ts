@@ -37,10 +37,10 @@ export class ResultExtensions {
     result: Result<T>,
     func: (value: T) => Result<U>
   ): Result<U> {
-    if (result.isFailure()) {
-      return Result.fail(result.getErrors()[0]);
+    if (result.isFailure) {
+      return Result.fail(result.errors[0]);
     }
-    return func(result.getValue());
+    return func(result.value);
   }
 
   /**
@@ -61,10 +61,10 @@ export class ResultExtensions {
    * ```
    */
   static map<T, U>(result: Result<T>, func: (value: T) => U): Result<U> {
-    if (result.isFailure()) {
-      return Result.fail(result.getErrors()[0]);
+    if (result.isFailure) {
+      return Result.fail(result.errors[0]);
     }
-    return Result.ok(func(result.getValue()));
+    return Result.ok(func(result.value));
   }
 
   /**
@@ -84,8 +84,8 @@ export class ResultExtensions {
    * ```
    */
   static tap<T>(result: Result<T>, action: (value: T) => void): Result<T> {
-    if (result.isSuccess()) {
-      action(result.getValue());
+    if (result.isSuccess) {
+      action(result.value);
     }
     return result;
   }
